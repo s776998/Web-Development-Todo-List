@@ -1,12 +1,17 @@
 import React, { Component } from "react";
+import Checkbox from "@material-ui/core/Checkbox";
 
 export default class List extends Component {
-  renderItem = (text, i) => {
-    const { onClickItem } = this.props;
+  renderItem = (item, i) => {
+    const { onToggleTodo } = this.props;
 
     return (
-      <div style={styles.item} onClick={() => onClickItem(i)}>
-        {text}
+      <div style={styles.item}>
+        <Checkbox 
+          checked = {item.completed}
+          onChange = {() => onToggleTodo(item.id)}
+        />
+        {item.text}
       </div>
     );
   };
