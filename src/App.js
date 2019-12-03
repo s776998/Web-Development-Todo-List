@@ -3,6 +3,8 @@ import React, { Component } from "react";
 import List from "./List";
 import Input from "./Input";
 import Title from "./Title";
+import {VisibilityFilters} from "./constants";
+import Footer from "./Footer";
 
 export default class App extends Component {
   key = 0;
@@ -13,13 +15,15 @@ export default class App extends Component {
       {text: "Write Code", id: this.key++, completed: false},
       {text: "Ship App", id: this.key++, completed: false}
       ],
+      visibilityFilter: VisibilityFilters.SHOW_ALL
   };
 
   onAddTodo = text => {
     const { todos } = this.state;
 
     this.setState({
-      todos: [{text, id: this.key, completed: false}, ...todos]
+      ...this.state,
+      todos: [{text, id: this.key++, completed: false}, ...todos]
     });
   };
 
@@ -36,19 +40,32 @@ export default class App extends Component {
     });
   }
 
-  onRemoveTodo = index => {
+  onUpdateVisibilityFilter = visibility => {
+    this.setState({
+      ...this.state,
+      visibilityFilter: visibility
+    });
+  };
+
+  onDeleteTodo = index => {
     const { todos } = this.state;
 
     this.setState({
-      todos: todos.filter((todo, i) => i !== index)
+      ...this.state,
+      todos: todos.filter(todo => todo.id !== index)
     });
   };
 
   render() {
-    const { todos } = this.state;
+    const { todos, visibilityFilter } = this.state;
 
-    const activeTodos = todos.filter(todo => !todo.completed);
-    const completedTodos = todos.filter(todo => todo.completed);
+    let visibleTodos = todos;
+    if (visibilityFilter === VisibilityFilters.SHOW_ACTIVE) {
+      visibleTodos = todos.filter(todo => !todo.completed);
+    } else if (visibilityFilter === VisibilityFilters.SHOW_COMPLETED) {
+      visibleTodos = todos.filter(todo => todo.completed);
+    }
+
 
     return (
       <div style={styles.container}>
@@ -57,9 +74,15 @@ export default class App extends Component {
           placeholder={"Type a todo, then hit enter!"}
           onSubmitEditing={this.onAddTodo}
         />
-        <List list={activeTodos} onToggleTodo={this.onToggleTodo} />
-        <Title>Completed List</Title>
-        <List list={completedTodos} onToggleTodo={this.onToggleTodo}/>
+        <List
+          list={visibleTodos}
+          onToggleTodo={this.onToggleTodo}
+          onDeleteTodo={this.onDeleteTodo}
+        />
+        <Footer
+          currentFilter = {this.state.visibilityFilter}
+          onUpdateVisibilityFilter = {this.onUpdateVisibilityFilter}
+        />
       </div>
     );
   }
