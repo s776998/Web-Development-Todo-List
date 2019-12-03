@@ -1,22 +1,24 @@
-import ReactDOM from "react-dom";
 import React from "react";
-import {createStore, applyMiddleware} from "redux";
-import {Provider} from "react-redux";
+import ReactDOM from "react-dom";
+import { createStore, applyMiddleware } from "redux";
+import { Provider } from "react-redux";
 import thunk from "redux-thunk";
 import App from "./App";
-import {reducer} from "./TodoListRedux";
+
+// Import the reducer and create a store
+import { reducer } from "./TodoListRedux";
 
 const logger = store => next => action => {
-  console.log("dispatching ", action);
+  console.log("dispatching", action);
   let result = next(action);
-  console.log("next state: ", store.getState());
+  console.log("next state", store.getState());
   return result;
 };
 
 const store = createStore(reducer, applyMiddleware(logger, thunk));
 
 const AppWithStore = (
-  <Provider store = {store}>
+  <Provider store={store}>
     <App />
   </Provider>
 );

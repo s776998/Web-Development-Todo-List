@@ -7,12 +7,12 @@ export default class List extends Component {
     const { onToggleTodo, onDeleteTodo } = this.props;
 
     return (
-      <div style={styles.item} key = {item.id}>
-        <Checkbox 
-          checked = {item.completed}
-          onChange = {() => onToggleTodo(item.id)}
+      <div style={styles.item} key={item.id}>
+        <Checkbox
+          checked={item.completed}
+          onChange={() => onToggleTodo(item)}
         />
-        <DeleteForeverIcon 
+        <DeleteForeverIcon
           style={styles.delete}
           onClick={() => onDeleteTodo(item.id)}
         />
