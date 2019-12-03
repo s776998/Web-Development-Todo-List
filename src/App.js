@@ -3,61 +3,103 @@ import React, { Component } from "react";
 import List from "./List";
 import Input from "./Input";
 import Title from "./Title";
-import {VisibilityFilters} from "./constants";
 import Footer from "./Footer";
+import { VisibilityFilters } from "./constants";
 
-export default class App extends Component {
-  key = 0;
-  state = {
-    todos: [
-      {text: "Click to remove", id: this.key++, completed: false},
-      {text: "Learn React", id: this.key++, completed: false},
-      {text: "Write Code", id: this.key++, completed: false},
-      {text: "Ship App", id: this.key++, completed: false}
-      ],
-      visibilityFilter: VisibilityFilters.SHOW_ALL
+import { connect } from "react-redux";
+import { actionCreators } from "./TodoListRedux";
+
+const mapStateToProps = state => ({
+  todos: state.todos,
+  visibilityFilter: state.visibilityFilter
+});
+
+const API_URL = "https://5de5cb269c4220001405b029.mockapi.io/api/todos";
+
+class App extends Component {
+  fetchTodos = () => {
+    return dispatch => {
+      dispatch(actionCreators.fetchTodosPending());
+      fetch(API_URL)
+        .then(res => res.json())
+        .then(res => {
+          if (res.error) {
+            throw res.error;
+          }
+          dispatch(actionCreators.fetchTodosSuccess(res));
+          return res.json();
+        })
+        .catch(error => {
+          dispatch(actionCreators.fetchTodosError(error));
+        });
+    };
   };
 
-  onAddTodo = text => {
-    const { todos } = this.state;
-
-    this.setState({
-      ...this.state,
-      todos: [{text, id: this.key++, completed: false}, ...todos]
-    });
-  };
-
-  onToggleTodo = index => {
-    const {todos} = this.state;
-    this.setState({
-      todos: todos.map((todo, i) => {
-        if(todo.id === index) {
-          return {...todo, completed: !todo.completed};
-        } else {
-          return todo;
-        }
-      })
-    });
+  componentDidMount() {
+    const { dispatch } = this.props;
+    dispatch(this.fetchTodos());
   }
 
-  onUpdateVisibilityFilter = visibility => {
-    this.setState({
-      ...this.state,
-      visibilityFilter: visibility
-    });
+  onAddTodo = text => {
+    const { dispatch } = this.props;
+    fetch(API_URL, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "POST",
+      body: JSON.stringify({ text, completed: false })
+    })
+      .then(res => res.json())
+      .then(result => {
+        console.log("result from add: ", result);
+        dispatch(actionCreators.add(result));
+      })
+      .catch(err => console.error("Request failed", err));
   };
 
-  onDeleteTodo = index => {
-    const { todos } = this.state;
+  onToggleTodo = todo => {
+    todo.completed = !todo.completed;
+    const { dispatch } = this.props;
+    fetch(API_URL + "/" + todo.id, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "PUT",
+      body: JSON.stringify(todo)
+    })
+      .then(res => res.json())
+      .then(result => {
+        dispatch(actionCreators.update(result));
+      })
+      .catch(err => console.error("Request failed", err));
+  };
 
-    this.setState({
-      ...this.state,
-      todos: todos.filter(todo => todo.id !== index)
-    });
+  onUpdateVisibilityFilter = visibility => {
+    const { dispatch } = this.props;
+    dispatch(actionCreators.setVisibilityFilter(visibility));
+  };
+
+  onDeleteTodo = id => {
+    const { dispatch } = this.props;
+    fetch(API_URL + "/" + id, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "DELETE"
+    })
+      .then(res => res.json())
+      .then(result => {
+        console.log("deleted:", result);
+        dispatch(actionCreators.remove(result.id));
+      })
+      .catch(err => console.error("Request failed", err));
   };
 
   render() {
-    const { todos, visibilityFilter } = this.state;
+    const { todos, visibilityFilter } = this.props;
 
     let visibleTodos = todos;
     if (visibilityFilter === VisibilityFilters.SHOW_ACTIVE) {
@@ -65,7 +107,6 @@ export default class App extends Component {
     } else if (visibilityFilter === VisibilityFilters.SHOW_COMPLETED) {
       visibleTodos = todos.filter(todo => todo.completed);
     }
-
 
     return (
       <div style={styles.container}>
@@ -80,8 +121,8 @@ export default class App extends Component {
           onDeleteTodo={this.onDeleteTodo}
         />
         <Footer
-          currentFilter = {this.state.visibilityFilter}
-          onUpdateVisibilityFilter = {this.onUpdateVisibilityFilter}
+          currentFilter={this.props.visibilityFilter}
+          onUpdateVisibilityFilter={this.onUpdateVisibilityFilter}
         />
       </div>
     );
@@ -94,3 +135,5 @@ const styles = {
     flexDirection: "column"
   }
 };
+
+export default connect(mapStateToProps)(App);
