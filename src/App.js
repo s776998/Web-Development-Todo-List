@@ -8,31 +8,32 @@ import { VisibilityFilters } from "./constants";
 
 import { connect } from "react-redux";
 import { actionCreators } from "./TodoListRedux";
+import { todosRef } from "./firebase";
 
 const mapStateToProps = state => ({
   todos: state.todos,
   visibilityFilter: state.visibilityFilter
 });
 
-const API_URL = "https://5de5cb269c4220001405b029.mockapi.io/api/todos";
-
 class App extends Component {
-  fetchTodos = () => {
-    return dispatch => {
-      dispatch(actionCreators.fetchTodosPending());
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(res => {
-          if (res.error) {
-            throw res.error;
-          }
-          dispatch(actionCreators.fetchTodosSuccess(res));
-          return res.json();
-        })
-        .catch(error => {
-          dispatch(actionCreators.fetchTodosError(error));
+  fetchTodos = () => async dispatch => {
+    dispatch(actionCreators.fetchTodosPending());
+    todosRef.on("value", snapshot => {
+      let todos = snapshot.val();
+      console.log("snapshot:");
+      console.log(todos);
+      let newTodos = [];
+      for (let key in todos) {
+        newTodos.push({
+          id: key,
+          text: todos[key].text,
+          completed: todos[key].completed
         });
-    };
+      }
+      console.log("newTodos:");
+      console.log(newTodos);
+      dispatch(actionCreators.fetchTodosSuccess(newTodos));
+    });
   };
 
   componentDidMount() {
@@ -42,38 +43,13 @@ class App extends Component {
 
   onAddTodo = text => {
     const { dispatch } = this.props;
-    fetch(API_URL, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      method: "POST",
-      body: JSON.stringify({ text, completed: false })
-    })
-      .then(res => res.json())
-      .then(result => {
-        console.log("result from add: ", result);
-        dispatch(actionCreators.add(result));
-      })
-      .catch(err => console.error("Request failed", err));
+    dispatch(actionCreators.add({ text, completed: false }));
   };
 
   onToggleTodo = todo => {
     todo.completed = !todo.completed;
     const { dispatch } = this.props;
-    fetch(API_URL + "/" + todo.id, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      method: "PUT",
-      body: JSON.stringify(todo)
-    })
-      .then(res => res.json())
-      .then(result => {
-        dispatch(actionCreators.update(result));
-      })
-      .catch(err => console.error("Request failed", err));
+    dispatch(actionCreators.update(todo));
   };
 
   onUpdateVisibilityFilter = visibility => {
@@ -83,19 +59,7 @@ class App extends Component {
 
   onDeleteTodo = id => {
     const { dispatch } = this.props;
-    fetch(API_URL + "/" + id, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
-      method: "DELETE"
-    })
-      .then(res => res.json())
-      .then(result => {
-        console.log("deleted:", result);
-        dispatch(actionCreators.remove(result.id));
-      })
-      .catch(err => console.error("Request failed", err));
+    dispatch(actionCreators.remove(id));
   };
 
   render() {
