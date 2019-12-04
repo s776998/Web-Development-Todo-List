@@ -12,5 +12,6 @@ var firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const databaseRef = firebase.database().ref();
 
-export default firebase;
+export const todosRef = databaseRef.child("todos");
